@@ -78,6 +78,7 @@ def initial_guess_criticalpure(eos, n=50):
             T0 = 'sup'
 
     # Step 2. Find the temperature transition subcritical to supercritical
+    oldTc0 = 0
     loop = True
     ro = np.linspace(ro0, rof, n)
     dro = ro[1] - ro[0]
@@ -100,7 +101,13 @@ def initial_guess_criticalpure(eos, n=50):
                 Tsup = T[-1]
     else:
         while loop and k < 10:
+            oldoldTc0 = oldTc0
+            oldTc0 = Tc0
             Tc0 += dTc0
+            if(Tc0 < 0):
+                if (oldTc0 > 10): Tc0 = 0.5*oldTc0
+                else: Tc0 = 0.5*oldoldTc0
+                dTc0 = 0.5*dTc0
             k += 1
             T.append(Tc0)
             for i in range(n):
