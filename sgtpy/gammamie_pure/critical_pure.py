@@ -58,6 +58,7 @@ def initial_guess_criticalpure(eos, n=50):
     roc0 = romin/5
     Tc0 = eos.xs_m*eos.eps_ii/kb
     dTc0 = Tc0*0.3
+    # print("romin:", romin, " roc0:", roc0, "Tc0:", Tc0, "dTc0:",dTc0)
 
     ro0 = 0.25*roc0
     rof = 2*roc0
@@ -80,6 +81,7 @@ def initial_guess_criticalpure(eos, n=50):
     # Step 2. Find the temperature transition subcritical to supercritical
     oldTc0 = 0
     loop = True
+    loop2 = True
     ro = np.linspace(ro0, rof, n)
     dro = ro[1] - ro[0]
     k = 0
@@ -87,11 +89,22 @@ def initial_guess_criticalpure(eos, n=50):
     if T0 == 'sub':
         while loop and k < 10:
             Tc0 += dTc0
+            # print("SUB>Tc0:", Tc0, "k:", k, "dTc0:", dTc0)
+            while loop2:
+                P, dP = eos.dP_drho(ro[0], Tc0)
+                # print("SUB>Tc0:", Tc0, "dP:", dP)
+                if dP < 0:
+                    Tc0 = Tc0*0.9
+                else:
+                    loop2 = False
             loop = False
+            armless = False
             k += 1
             T.append(Tc0)
+            dP = 0
             for i in range(n):
                 P, dP = eos.dP_drho(ro[i], Tc0)
+                # print("Tc0:", Tc0, "ro[",i,"]:", ro[i], "P:", P, "dP:", dP, "loop:", loop)
                 if dP < 0:
                     loop = True
                     ro0 = ro[i]
@@ -99,12 +112,34 @@ def initial_guess_criticalpure(eos, n=50):
                 loop = False
                 Tsub = T[-2]
                 Tsup = T[-1]
+                # olddP = dP
+                # P, dP = eos.dP_drho(ro[i], Tc0)
+                # change = olddP*dP
+                # print("Tc0:", Tc0, "ro[",i,"]:", ro[i], "P:", P, "dP:", dP, "loop:", loop, "change:", change)
+                # if i == 0 and dP < 0:
+                #     Tc0 -= 2*dTc0
+                #     dTc0 = dTc0/2
+                #     print("armless")
+                #     # break
+                # if change < 0:
+                #     loop = True
+                #     ro0 = ro[i]
+                #     break
+                # loop = False    
+                # if dP < 0:
+                #     Tsub = T[-2]
+                #     Tsup = T[-1]
+                # else:
+                #     Tsub = T[-1]
+                #     Tsup = T[-2]
+                # print("SUB > Definido Tsub e Tsup - Tsub:", Tsub, "Tsup:", Tsup)
     else:
         while loop and k < 10:
             oldoldTc0 = oldTc0
             oldTc0 = Tc0
             Tc0 += dTc0
-            if(Tc0 < 0):
+            # print("SUP>Tc0:", Tc0)
+            if(Tc0 < 1):
                 if (oldTc0 > 10): Tc0 = 0.5*oldTc0
                 else: Tc0 = 0.5*oldoldTc0
                 dTc0 = 0.5*dTc0
@@ -112,11 +147,13 @@ def initial_guess_criticalpure(eos, n=50):
             T.append(Tc0)
             for i in range(n):
                 P, dP = eos.dP_drho(ro[i], Tc0)
+                # print("Tc0:", Tc0, "ro[",i,"]:",ro[i], "P:",P," dP:",dP)
                 if dP < 0:
                     loop = False
                     ro0 = ro[i]
                     Tsup = T[-2]
                     Tsub = T[-1]
+                    # print("break > Tsub:",Tsub, "Tsup:",Tsup,"Tc0:", Tc0, "ro[",i,"]:",ro[i], "P:",P," dP:",dP)
                     break
 
     # Step 3. Find rho_min and rho_max at the subcritical temperature
