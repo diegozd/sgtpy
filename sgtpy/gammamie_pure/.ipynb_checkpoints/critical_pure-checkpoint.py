@@ -86,7 +86,9 @@ def initial_guess_criticalpure(eos, n=50):
     dro = ro[1] - ro[0]
     k = 0
     T = [Tc0]  # List to store the studied temperatures
+    TemValorTsup = False
     if T0 == 'sub':
+        # print('T0:',T0)
         while loop and k < 10:
             Tc0 += dTc0
             # print("SUB>Tc0:", Tc0, "k:", k, "dTc0:", dTc0)
@@ -112,6 +114,7 @@ def initial_guess_criticalpure(eos, n=50):
                 loop = False
                 Tsub = T[-2]
                 Tsup = T[-1]
+                TemValorTsup = True
                 # olddP = dP
                 # P, dP = eos.dP_drho(ro[i], Tc0)
                 # change = olddP*dP
@@ -134,7 +137,8 @@ def initial_guess_criticalpure(eos, n=50):
                 #     Tsup = T[-2]
                 # print("SUB > Definido Tsub e Tsup - Tsub:", Tsub, "Tsup:", Tsup)
     else:
-        while loop and k < 10:
+        # print('T0:',T0, 'loop:',loop, 'k:',k)
+        while loop and k < 100:
             oldoldTc0 = oldTc0
             oldTc0 = Tc0
             Tc0 += dTc0
@@ -145,6 +149,7 @@ def initial_guess_criticalpure(eos, n=50):
                 dTc0 = 0.5*dTc0
             k += 1
             T.append(Tc0)
+            # print('n:',n,'T:',T)
             for i in range(n):
                 P, dP = eos.dP_drho(ro[i], Tc0)
                 # print("Tc0:", Tc0, "ro[",i,"]:",ro[i], "P:",P," dP:",dP)
@@ -153,11 +158,16 @@ def initial_guess_criticalpure(eos, n=50):
                     ro0 = ro[i]
                     Tsup = T[-2]
                     Tsub = T[-1]
+                    TemValorTsup = True
                     # print("break > Tsub:",Tsub, "Tsup:",Tsup,"Tc0:", Tc0, "ro[",i,"]:",ro[i], "P:",P," dP:",dP)
                     break
 
     # Step 3. Find rho_min and rho_max at the subcritical temperature
-
+    if TemValorTsup == False:
+        print('Sem valor em Tsub')
+        print('T0:',T0, 'loop:',loop, 'k:',k, 'dP:',dP)
+    # print('Tsub:',Tsub)
+    
     ro = np.linspace(ro0, rof, n)
     dro = ro[1] - ro[0]
     ro_int = []
@@ -211,7 +221,7 @@ def get_critical(eos, Tc0=None, rhoc0=None, method='hybr', full_output=False):
     """
 
     if Tc0 is None and rhoc0 is None:
-        Tc0, rhoc0 = initial_guess_criticalpure(eos, n=30)
+        Tc0, rhoc0 = initial_guess_criticalpure(eos, n=80)
 
     inc0 = np.array([Tc0, rhoc0])
     sol = root(fobj_crit, inc0, method=method, args=eos)
